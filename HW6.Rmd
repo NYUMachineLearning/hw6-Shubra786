@@ -18,6 +18,7 @@ library(tidyverse)
 library(mlbench)
 library(caret)
 library(pROC)
+library(ISLR)
 ```
 
 ## The Breast Cancer Dataset
@@ -105,6 +106,165 @@ confusionMatrix(svm_test, reference = test_classification$Class)
 
 ##Homework
 
-1. Choose an appropriate machine learning dataset and use SVM with two different kernels. Campare the results. 
+1. Choose an appropriate machine learning dataset and use SVM with two different kernels. Campare the results.
+
+SVM model with a linear kernel
+
+```{r}
+data("Carseats")
+carseats = Carseats
+
+#convert quantitative variable Sales into a binary response 
+High = ifelse(carseats$Sales<=8, "No", "Yes")
+carseats = data.frame(carseats, High)
+
+#set seed to make results reproducible 
+set.seed(29)
+
+#split data into train and test subset (250 and 150 respectively)
+train = sample(1:nrow(carseats), 250)
+
+#Fit train subset of data to svm model with a linear kernel
+control = trainControl(method = "repeatedcv", repeats = 5, classProbs = T, savePredictions = T)
+
+svm.linear = train(High~.-Sales, carseats, subset=train, method = "svmLinear", tuneLength = 10, trControl = control)
+
+svm.linear
+
+```
+
+ROC curve for SVM model with a linear kernel
+
+```{r}
+
+roc(predictor = svm.linear$pred$Yes, response = svm.linear$pred$obs)$auc
+
+plot(x = roc(predictor = svm.linear$pred$Yes, response = svm.linear$pred$obs)$specificities, y = roc(predictor = svm.linear$pred$Yes, response = svm.linear$pred$obs)$sensitivities, col= "blue", xlim = c(1, 0), type ="l", ylab = "Sensitivity", xlab = "Specificity")
+
+```
+
+Test set for SVM model with a linear kernel
+
+```{r}
+#set seed to make results reproducible 
+set.seed(29)
+
+svm.linear_test = predict(svm.linear, newdata = carseats[-train,])
+confusionMatrix(svm.linear_test, reference = carseats[-train,]$High)
+```
+
+SVM model with a radial kernel
+
+```{r}
+
+set.seed(1112)
+control = trainControl(method = "repeatedcv", repeats = 5, classProbs = T, savePredictions = T)
+
+svm.radial = train(High~.-Sales, carseats, subset=train, method = "svmRadial", tuneLength = 10, trControl = control)
+
+svm.radial
+
+```
+
+ROC curve for SVM model with a radial kernel
+
+```{r}
+roc(predictor = svm.radial$pred$Yes, response = svm.radial$pred$obs)$auc
+
+plot(x = roc(predictor = svm.radial$pred$Yes, response = svm.radial$pred$obs)$specificities, y = roc(svm.radial$pred$Yes, response = svm.radial$pred$obs)$sensitivities, col= "blue", xlim = c(1, 0), type ="l", ylab = "Sensitivity", xlab = "Specificity")
+```
+
+Test set for SVM model with a radial kernel
+
+```{r}
+
+#set seed to make results reproducible 
+set.seed(29)
+
+svm.radial_test = predict(svm.radial, newdata = carseats[-train,])
+confusionMatrix(svm.radial_test, reference = carseats[-train,]$High)
+
+```
+
+COMPARISON OF SVM LINEAR VS SVM RADIAL 
+
+Whilst the linear model marginally outperformed the radial model during training, they both produced precisely the same accuracy when tested.
+
 
 2. Attempt using SVM after using a previously covered feature selection method. Do the results improve? Explain. 
+
+```{r}
+# RFE FEATURE SELECTION (WRAPPER METHOD)
+
+# ensure results are reproducible
+set.seed(123)
+
+# define the control using a random forest selection function 
+control = rfeControl(functions=rfFuncs, method="cv", number=10) # NOTE 10 FOLD CROSS- VALIDATION RESAMPLING METHOD
+
+# run the RFE algorithm (NOTE: ALL FEATURES WILL BE TESTED AT THE SAME TIME)
+results = rfe(carseats[,2:10], carseats[,11], sizes = c(2:10), rfeControl = control)
+
+results
+results$variables
+
+# plot the results 
+plot(results, type=c("g", "o"))
+
+# OUTCOME
+
+# THE PLOT CLEARLY SHOWS THAT OPTIMAL FEATURE SELECTION INVOLVES USING 7 FEATURES. Price AND Urban ARE THE FEATURES EXCLUDED.
+```
+
+REVISED SVM MODELS BASED ON FEATURE SELECTION
+
+A) LINEAR
+
+```{r}
+
+set.seed(123)
+control = trainControl(method = "repeatedcv", repeats = 5, classProbs = T, savePredictions = T)
+    
+svm.linear = train(High ~ CompPrice + Income + Advertising + Population + ShelveLoc + Age + Education + US, carseats, subset=train, method = "svmLinear", tuneLength = 10, trControl = control)
+
+svm.linear
+
+roc(predictor = svm.linear$pred$Yes, response = svm.linear$pred$obs)$auc
+
+plot(x = roc(predictor = svm.linear$pred$Yes, response = svm.linear$pred$obs)$specificities, y = roc(predictor = svm.linear$pred$Yes, response = svm.linear$pred$obs)$sensitivities, col= "blue", xlim = c(1, 0), type ="l", ylab = "Sensitivity", xlab = "Specificity")
+
+svm.linear_test = predict(svm.linear, newdata = carseats[-train,])
+confusionMatrix(svm.linear_test, reference = carseats[-train,]$High)
+
+# IN RESPECT OF THE REVISED SVM MODEL WITH A LINEAR KERNEL, ITS TEST ACCURACY SCORE OF 0.7933 IS LESS THAN THE ORIGINAL RESPECTIVE MODEL'S TEST ACCURACY SCORE OF 0.8733. IN THIS CASE, FEATURE SELECTION HAS NOT IMPROVED THE MODEL.
+
+```
+
+B) RADIAL
+
+```{r}
+
+set.seed(1112)
+control = trainControl(method = "repeatedcv", repeats = 5, classProbs = T, savePredictions = T)
+
+svm.radial = train(High ~ CompPrice + Income + Advertising + Population + ShelveLoc + Age + Education + US, carseats, subset=train, method = "svmRadial", tuneLength = 10, trControl = control)
+
+svm.radial
+
+roc(predictor = svm.radial$pred$Yes, response = svm.radial$pred$obs)$auc
+
+plot(x = roc(predictor = svm.radial$pred$Yes, response = svm.radial$pred$obs)$specificities, y = roc(svm.radial$pred$Yes, response = svm.radial$pred$obs)$sensitivities, col= "blue", xlim = c(1, 0), type ="l", ylab = "Sensitivity", xlab = "Specificity")
+
+svm.radial_test = predict(svm.radial, newdata = carseats[-train,])
+confusionMatrix(svm.radial_test, reference = carseats[-train,]$High)
+
+
+# IN RESPECT OF THE REVISED SVM MODEL WITH A RADIAL KERNEL, ITS TEST ACCURACY SCORE OF 0.7733 IS LESS THAN THE ORIGINAL RESPECTIVE MODEL'S TEST ACCURACY SCORE OF 0.8733. FURTHERMORE, IT'S SCORE IS WORSE THAN THE REVISED LINEAR MODEL'S SCORE OF 0.7933 - ORIGINALLY, THE LINEAR AND RADIAL TEST ACCURACY SCORES WERE EQUAL. IN THIS CASE, FEATURE SELECTION HAS NOT IMPROVED THE MODEL.
+
+```
+
+# CONCLUSION
+
+## Feature selection is not necessary for the SVM algorithm. It is because SVM already embeds a feature selection with the regularization term controlled by the C parameter. The C parameter can indeed be seen as a parameter controlling the number of features to select by the SVM for classification, and the kernel function is there to build an appropriate feature space. 
+
+What is however important is to optimize the C parameter, and eventually the kernel function. If such optimisation is undertaken, most of the feature selection methods should decrease SVM classification performance because they are not aware of the classification algorithm - and then there is a risk of eliminating pertinent features.
