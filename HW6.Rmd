@@ -2,7 +2,9 @@
 title: "Support Vector Machines(SVMs) Tutorial"
 author: "Sonali Narang"
 date: "11/12/2019"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -263,8 +265,8 @@ confusionMatrix(svm.radial_test, reference = carseats[-train,]$High)
 
 ```
 
-# CONCLUSION
+CONCLUSION
 
-## Feature selection is not necessary for the SVM algorithm. It is because SVM already embeds a feature selection with the regularization term controlled by the C parameter. The C parameter can indeed be seen as a parameter controlling the number of features to select by the SVM for classification, and the kernel function is there to build an appropriate feature space. 
+Feature selection is not necessary for the SVM algorithm. It is because SVM already embeds a feature selection with the regularization term controlled by the C parameter. The C parameter can indeed be seen as a parameter controlling the number of features to select by the SVM for classification, and the kernel function is there to build an appropriate feature space. 
 
 What is however important is to optimize the C parameter, and eventually the kernel function. If such optimisation is undertaken, most of the feature selection methods should decrease SVM classification performance because they are not aware of the classification algorithm - and then there is a risk of eliminating pertinent features.
