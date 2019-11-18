@@ -190,7 +190,7 @@ confusionMatrix(svm.radial_test, reference = carseats[-train,]$High)
 
 COMPARISON OF SVM LINEAR VS SVM RADIAL 
 
-Whilst the linear model marginally outperformed the radial model during training, they both produced precisely the same accuracy when tested.
+Whilst the linear model marginally outperformed the radial model during training, they both produced precisely the same accuracy when tested. The inference is that it should not be assumed that transformation of the feature space will always result in superior performance. 
 
 
 2. Attempt using SVM after using a previously covered feature selection method. Do the results improve? Explain. 
